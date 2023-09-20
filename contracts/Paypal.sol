@@ -2,14 +2,18 @@
 pragma solidity ^0.8.9;
 
 contract Paypal {
+    //Define the Owner of the smart contract
+
     address public owner;
 
     constructor() {
         owner = msg.sender;
     }
 
+    //Create Struct and Mappping for request, transaction & name
+
     struct request {
-        address requester;
+        address requestor;
         uint256 amount;
         string message;
         string name;
@@ -22,6 +26,7 @@ contract Paypal {
         address otherPartyAddress;
         string otherPartyName;
     }
+
     struct userName {
         string name;
         bool hasName;
@@ -31,11 +36,15 @@ contract Paypal {
     mapping(address => request[]) requests;
     mapping(address => sendReceive[]) history;
 
+    //Add a name to wallet address
+
     function addName(string memory _name) public {
         userName storage newUserName = names[msg.sender];
         newUserName.name = _name;
         newUserName.hasName = true;
     }
+
+    //Create a Request
 
     function createRequest(
         address user,
@@ -51,6 +60,8 @@ contract Paypal {
         }
         requests[user].push(newRequest);
     }
+
+    //Pay a Request
 
     function payRequest(uint256 _request) public payable {
         require(_request < requests[msg.sender].length, "No Such Request");
@@ -98,5 +109,47 @@ contract Paypal {
             newReceive.otherPartyName = names[sender].name;
         }
         history[receiver].push(newReceive);
+    }
+
+    //Get all requests sent to a User
+
+    function getMyRequests(
+        address _user
+    )
+        public
+        view
+        returns (
+            address[] memory,
+            uint256[] memory,
+            string[] memory,
+            string[] memory
+        )
+    {
+        address[] memory addrs = new address[](requests[_user].length);
+        uint256[] memory amnt = new uint256[](requests[_user].length);
+        string[] memory msge = new string[](requests[_user].length);
+        string[] memory nme = new string[](requests[_user].length);
+
+        for (uint i = 0; i < requests[_user].length; i++) {
+            request storage myRequests = requests[_user][i];
+            addrs[i] = myRequests.requestor;
+            amnt[i] = myRequests.amount;
+            msge[i] = myRequests.message;
+            nme[i] = myRequests.name;
+        }
+
+        return (addrs, amnt, msge, nme);
+    }
+
+    //Get all historic transactions user has been apart of
+
+    function getMyHistory(
+        address _user
+    ) public view returns (sendReceive[] memory) {
+        return history[_user];
+    }
+
+    function getMyName(address _user) public view returns (userName memory) {
+        return names[_user];
     }
 }
